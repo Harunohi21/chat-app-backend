@@ -36,6 +36,5 @@ module FlutterBackend
     
     # domain追加
     config.hosts << ENV.fetch('RENDER_API_HOST', nil)
-    config.hosts << "slackapi-team2.onrender.com"
   end
 end
