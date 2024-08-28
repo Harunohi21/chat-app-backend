@@ -11,7 +11,7 @@ Bundler.require(*Rails.groups)
 module FlutterBackend
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
-    config.load_defaults 5.2
+    config.load_defaults 7.0
 
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
@@ -35,7 +35,7 @@ module FlutterBackend
     config.action_cable.mount_path = '/cable'
     
     # domain追加
-    # config.hosts << ENV.fetch('RENDER_API_HOST', nil)
-     config.hosts << "chat-app-backend-hao1.onrender.com"
+    config.hosts << ENV.fetch('RENDER_API_HOST', nil)
+    config.hosts << "chat-app-backend-hao1.onrender.com"
   end
 end

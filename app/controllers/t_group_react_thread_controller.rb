@@ -32,10 +32,10 @@ class TGroupReactThreadController < ApplicationController
         @t_group_react_thread.save
         @react_user_info = @m_user.name
         ActionCable.server.broadcast("group_thread_message_channel", {
-            react_message: @t_group_react_thread,
-            reacted_user_info: @react_user_info,
-            m_channel_id: params[:s_channel_id]
-          })
+          react_message: @t_group_react_thread,
+          reacted_user_info: @react_user_info,
+          m_channel_id: params[:s_channel_id]
+        })
         render json: { message: 'react successful'}, status: :ok
       end
     end

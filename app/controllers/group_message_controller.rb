@@ -70,19 +70,20 @@ class GroupMessageController < ApplicationController
 
     @t_user_channels.each do |u_channel|
       next unless u_channel.userid != @m_user.id
+      if (@t_group_message.draft_message_status != true)
+        u_channel.message_count += 1
+        temp_msgid = ""
 
-      u_channel.message_count += 1
-      temp_msgid = ""
+        u_channel.unread_channel_message&.split(",")&.each do |u_message|
+          temp_msgid += u_message
+          temp_msgid += ","
+        end
+        temp_msgid += @t_group_message.id.to_s
 
-      u_channel.unread_channel_message&.split(",")&.each do |u_message|
-        temp_msgid += u_message
-        temp_msgid += ","
+        u_channel.unread_channel_message = temp_msgid
+        TUserChannel.where(id: u_channel.id).update_all(message_count: u_channel.message_count,
+                                                        unread_channel_message: u_channel.unread_channel_message)
       end
-      temp_msgid += @t_group_message.id.to_s
-
-      u_channel.unread_channel_message = temp_msgid
-      TUserChannel.where(id: u_channel.id).update_all(message_count: u_channel.message_count,
-                                                      unread_channel_message: u_channel.unread_channel_message)
     end
 
     MUser.joins("INNER JOIN t_user_channels ON t_user_channels.userid = m_users.id
@@ -191,22 +192,24 @@ class GroupMessageController < ApplicationController
 
           @t_user_channels.each do |u_channel|
             next unless u_channel.userid != @m_user.id
+            if (@t_group_thread.draft_message_status != true)
 
-            u_channel.message_count += 1
-            temp_msgid = ""
-            unless u_channel.unread_thread_message.nil?
-              arr_msgid = u_channel.unread_thread_message.split(",")
-              unless arr_msgid.include? params[:s_group_message_id].to_s
-                u_channel.unread_thread_message.split(",").each do |u_message|
-                  temp_msgid += u_message
-                  temp_msgid += ","
+              u_channel.message_count += 1
+              temp_msgid = ""
+              unless u_channel.unread_thread_message.nil?
+                arr_msgid = u_channel.unread_thread_message.split(",")
+                unless arr_msgid.include? params[:s_group_message_id].to_s
+                  u_channel.unread_thread_message.split(",").each do |u_message|
+                    temp_msgid += u_message
+                    temp_msgid += ","
+                  end
                 end
               end
+              temp_msgid += @t_group_thread.id.to_s
+              u_channel.unread_thread_message = temp_msgid
+              TUserChannel.where(id: u_channel.id).update_all(message_count: u_channel.message_count,
+                                                              unread_thread_message: u_channel.unread_thread_message)
             end
-            temp_msgid += @t_group_thread.id.to_s
-            u_channel.unread_thread_message = temp_msgid
-            TUserChannel.where(id: u_channel.id).update_all(message_count: u_channel.message_count,
-                                                            unread_thread_message: u_channel.unread_thread_message)
           end
 
           MUser.joins("INNER JOIN t_user_channels ON t_user_channels.userid = m_users.id")

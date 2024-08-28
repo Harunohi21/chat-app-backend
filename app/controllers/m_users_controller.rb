@@ -1,7 +1,7 @@
-require 'base64'
-require 'digest'
-require 'aws-sdk-s3'
-require 'mime/types'
+require "base64"
+require "digest"
+require "aws-sdk-s3"
+require "mime/types"
 
 class MUsersController < ApplicationController
   skip_before_action :authenticate_request, only: [:login_user, :create, :confirm, :confirm_member_signup]
@@ -13,7 +13,7 @@ class MUsersController < ApplicationController
 
     m_workspace = MWorkspace.joins("INNER JOIN t_user_workspaces ON t_user_workspaces.workspaceid = m_workspaces.id
                                    INNER JOIN m_users ON m_users.id = t_user_workspaces.userid")
-                           .where("m_workspaces.workspace_name = ? and m_users.name = ?", login_params[:workspace_name], login_params[:name]).take(1)
+      .where("m_workspaces.workspace_name = ? and m_users.name = ?", login_params[:workspace_name], login_params[:name]).take(1)
 
     if m_user && m_user.authenticate(login_params[:password]) && m_workspace.size > 0
       t_user_workspace = TUserWorkspace.find_by(userid: m_user.id, workspaceid: m_workspace[0].id)
@@ -22,20 +22,20 @@ class MUsersController < ApplicationController
           token = jwt_encode(user_id: m_user.id, workspace_id: m_workspace[0].id)
           render json: { token: token }, status: :ok
         else
-          render json: { error: 'Account Deactivate. Please contact admin.' }, status: :unauthorized
+          render json: { error: "Account Deactivate. Please contact admin." }, status: :unauthorized
         end
       else
-        render json: { error: 'Invalid name/password combination' }, status: :not_found
+        render json: { error: "Invalid name/password combination" }, status: :not_found
       end
     else
-      render json: { error: 'Invalid name/password combination' }, status: :unprocessable_entity
+      render json: { error: "Invalid name/password combination" }, status: :unprocessable_entity
     end
   end
 
   def logout
     @user = MUser.find_by(id: @current_user)
     MUser.where(id: @user).update_all(active_status: 0)
-    render json: { message: 'Sign Out Successfully' }
+    render json: { message: "Sign Out Successfully" }
   end
 
   def confirm
@@ -130,12 +130,12 @@ class MUsersController < ApplicationController
     @m_user.member_status = true
     status = true
     @t_workspace = MWorkspace.find_by(id: invite_workspace_id_param[:invite_workspaceid])
-    if status &&  @m_user.save
+    if status && @m_user.save
       MUser.where(id: @m_user.id).update_all(remember_digest: nil, profile_image: nil)
     else
       status = false
     end
-    if(@t_workspace.nil?)
+    if (@t_workspace.nil?)
       if status && @m_workspace.save
       else
         status = false
@@ -152,7 +152,7 @@ class MUsersController < ApplicationController
     end
     @t_user_channel = TUserChannel.new
     @t_channel = MChannel.find_by(channel_name: @m_channel.channel_name, m_workspace_id: @m_workspace.id)
-    if(@t_channel.nil?)
+    if (@t_channel.nil?)
       @t_user_channel.created_admin = true
       @m_channel.m_workspace_id = @m_workspace.id
       if status && @m_channel.save
@@ -171,10 +171,10 @@ class MUsersController < ApplicationController
     else
       status = false
     end
-    if(status)
-      render json: { message: "Signup Complete."}, status: :ok
+    if (status)
+      render json: { message: "Signup Complete." }, status: :ok
     else
-      render json: { error: "Signup Failed."}, status: :unprocessable_entity
+      render json: { error: "Signup Failed." }, status: :unprocessable_entity
     end
   end
 
@@ -203,16 +203,8 @@ class MUsersController < ApplicationController
     password_confirmation = params[:m_user][:password_confirmation]
     user = MUser.find_by(id: @current_user.id)
     if user && user.authenticate(old_password)
-      if password.blank?
-        render json: { error: "Password can't be blank." }, status: :unprocessable_entity
-      elsif password_confirmation.blank?
-        render json: { error: "Confirm Password can't be blank." }, status: :unprocessable_entity
-      elsif password != password_confirmation
-        render json: { error: "Password and Confirmation Password do not match." }, status: :unprocessable_entity
-      else
-        MUser.where(id: @user).update_all(password_digest: @m_user.password_digest)
-        render json: { message: "Change Password Successful." }, status: :ok
-      end
+      MUser.where(id: @user).update_all(password_digest: @m_user.password_digest)
+      render json: { message: "Change Password Successful." }, status: :ok
     else
       render json: { error: "Your current password is wrong." }, status: :ok
     end
@@ -220,13 +212,18 @@ class MUsersController < ApplicationController
 
   # user名変更
   def edit_username
-    username = params[:username]
+    @username = params[:username]
     m_user = MUser.where(id: @current_user.id).first
-    m_user.update!(name: username)
+    m_user.update!(name: @username)
+
+    ActionCable.server.broadcast("profile_channel", {
+      name: @username
+    })
+
     render json: { message: "Change Username Successful." }, status: :ok
   rescue ActiveRecord::RecordInvalid => e
     logger.error("exception: #{e.message}")
-    render json: { error_message: e.record.errors.messages}, status: :unprocessable_entity
+    render json: { error_message: e.record.errors.messages }, status: :unprocessable_entity
   end
 
   def profile_update
@@ -235,9 +232,33 @@ class MUsersController < ApplicationController
     image_data = decode(image[:data])
 
     if MIME::Types[image_mime].empty?
-      render json: { error: 'Unsupported Content-Type' }, status: :unsupported_media_type
+      render json: { error: "Unsupported Content-Type" }, status: :unsupported_media_type
       return
     end
+
+    # Access the base64 encoded image
+    encoded_image = params.dig(:image, :data)
+
+    image_data = Base64.decode64(encoded_image.split(",").last)
+
+    # Create a Tempfile to store the decoded image
+    tempfile = Tempfile.new(["uploaded_image", ".jpg"])
+    tempfile.binmode
+    tempfile.write(image_data)
+    tempfile.rewind
+
+    # Check the image dimensions using MiniMagick
+    image = MiniMagick::Image.read(tempfile)
+    width, height = image.width, image.height
+
+    # Add your logic to handle width and height
+    if width > 500 || height > 500
+      tempfile.close
+      tempfile.unlink
+      return render json: { error: "Image dimensions are too large" }, status: :unprocessable_entity
+    end
+    tempfile.close
+    tempfile.unlink
 
     image_extension = extension(image_mime)
     image_url = put_s3(image_data, image_extension, image_mime)
@@ -251,19 +272,17 @@ class MUsersController < ApplicationController
       if profile_image_record.save
         delete_from_s3(old_image_url) if old_image_url.present?
         render json: {
-          message: 'Profile Image Updated Successfully',
+          message: "Profile Image Updated Successfully",
           user_id: @m_user.id,
-          profile_image: image_url
+          profile_image: image_url,
         }
       else
         render json: profile_image_record.errors, status: :unprocessable_entity
       end
     else
-      render json: { error: 'User not found' }, status: :unprocessable_entity
+      render json: { error: "User not found" }, status: :unprocessable_entity
     end
   end
-
-  
 
   private
 
@@ -292,7 +311,7 @@ class MUsersController < ApplicationController
 
   def put_s3(data, extension, mime_type)
     unique_time = Time.now.strftime("%Y%m%d%H%M%S")
-    file_name = Digest::SHA1.hexdigest(data)  + unique_time + extension
+    file_name = Digest::SHA1.hexdigest(data) + unique_time + extension
     s3 = Aws::S3::Resource.new
     bucket = s3.bucket("rails-blog-minio")
     obj = bucket.object("profile_images/#{file_name}")
@@ -301,7 +320,7 @@ class MUsersController < ApplicationController
       acl: "public-read",
       body: data,
       content_type: mime_type,
-      content_disposition: "inline"
+      content_disposition: "inline",
     )
 
     obj.public_url
@@ -313,7 +332,7 @@ class MUsersController < ApplicationController
     file_path = url.split("#{bucket_name}/").last
     bucket = s3.bucket(bucket_name)
     obj = bucket.object(file_path)
-  
+
     obj.delete
   end
 end

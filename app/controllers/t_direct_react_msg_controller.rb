@@ -17,6 +17,13 @@ class TDirectReactMsgController < ApplicationController
           reacted_user_info: @react_user_info
         })
 
+        if (params[:status].present? && params[:status] == 0)
+          ActionCable.server.broadcast("direct_thread_message_channel", {
+            remove_direct_react: t_direct_react,
+            direct_reacted_user_info: @react_user_info
+          })
+        end
+
         render json: { success: 'delete successful' }, status: :ok
       else
         @t_direct_react_msg = TDirectReactMsg.new(
@@ -27,11 +34,18 @@ class TDirectReactMsgController < ApplicationController
 
         @t_direct_react_msg.save
         @react_user_info = MUser.find_by(id: params[:user_id]).name
-
+        
         ActionCable.server.broadcast("direct_message_channel", {
           react_message: @t_direct_react_msg,
           reacted_user_info: @react_user_info
         })
+
+        if (params[:status].present? && params[:status] == 0)
+          ActionCable.server.broadcast("direct_thread_message_channel", {
+            direct_react_message: @t_direct_react_msg,
+            direct_reacted_user_info: @react_user_info
+          })
+        end
 
         render json: { success: 'react successful' }, status: :ok
       end

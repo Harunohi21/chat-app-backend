@@ -16,8 +16,14 @@ class TGroupReactMsgController < ApplicationController
           remove_reaction: t_group_react,
           reacted_user_info: @react_user_info,
           m_channel_id: params[:s_channel_id],
-          
         })
+        if (params[:status].present? && params[:status] == 0)
+          ActionCable.server.broadcast("group_thread_message_channel", {
+            group_remove_reaction: t_group_react,
+            group_reacted_user_info: @react_user_info,
+            m_channel_id: params[:s_channel_id]
+          })
+        end
         render json: { message: 'delete successful'}, status: :ok
       else
         @t_group_react_msg = TGroupReactMsg.new
@@ -27,10 +33,18 @@ class TGroupReactMsgController < ApplicationController
         @t_group_react_msg.save
         @react_user_info = @m_user.name
         ActionCable.server.broadcast("group_message_channel", {
-            react_message: @t_group_react_msg,
-            reacted_user_info: @react_user_info,
+          react_message: @t_group_react_msg,
+          reacted_user_info: @react_user_info,
+          m_channel_id: params[:s_channel_id]
+        })
+
+        if (params[:status].present? && params[:status] == 0)
+          ActionCable.server.broadcast("group_thread_message_channel", {
+            group_react_message: @t_group_react_msg,
+            group_reacted_user_info: @react_user_info,
             m_channel_id: params[:s_channel_id]
           })
+        end
 
         render json: { message: 'react successful'}, status: :ok
       end

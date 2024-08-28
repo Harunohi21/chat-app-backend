@@ -49,9 +49,10 @@ class ChannelUserController < ApplicationController
   end
 
   def join
-    if params[:channel_id].nil?
+    params[:id] = params[:channel_id]
+    if params[:id].nil?
       render json: { error: "Channel ID missing" }, status: :unprocessable_entity
-    elsif MChannel.find_by(id: params[:channel_id]).nil?
+    elsif MChannel.find_by(id: params[:id]).nil?
       render json: { error: "Channel not found" }, status: :unprocessable_entity
     else
       @t_user_channel = TUserChannel.new(
@@ -59,11 +60,18 @@ class ChannelUserController < ApplicationController
         unread_channel_message: 0,
         created_admin: 0,
         userid: params[:user_id],
-        channelid: params[:channel_id]
+        channelid: params[:id]
       )
 
       if @t_user_channel.save
-        @m_channel = MChannel.find_by(id: params[:channel_id])
+        @m_channel = MChannel.find_by(id: params[:id])
+
+        if @m_channel
+          ActionCable.server.broadcast("channel_user_channel", {
+            message: retrieve_group_message,
+          })
+        end
+
         render json: { message: "Successful Join" }, status: :ok
       else
         render json: @t_user_channel.errors, status: :unprocessable_entity
@@ -79,6 +87,9 @@ class ChannelUserController < ApplicationController
     else
       t_user_channel = TUserChannel.find_by(userid: params[:id], channelid: params[:channel_id])
       if t_user_channel&.destroy
+        ActionCable.server.broadcast("channel_user_channel", {
+          message:  retrieve_group_message,
+        })
         render json: { success: 'successful' }
       else
         render json: { error: 'Failed to delete user from channel' }, status: :unprocessable_entity

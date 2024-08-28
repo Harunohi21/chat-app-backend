@@ -63,11 +63,15 @@ class MChannelsController < ApplicationController
         
         gpthread.each do |gpthread|
           TGroupStarThread.where(groupthreadid: gpthread.id).destroy_all
+          TGroupReactThread.where(groupthreadid: gpthread.id).destroy_all
+          TGroupThreadMsgFile.where(groupthreadmsgid: gpthread.id).destroy_all
           TGroupMentionThread.where(groupthreadid: gpthread.id).destroy_all
           TGroupThread.find_by(id: gpthread.id).destroy
         end
         
         TGroupStarMsg.where(groupmsgid: gmsg.id).destroy_all
+        TGroupReactMsg.where(groupmsgid: gmsg.id).destroy_all
+        TGroupMsgFile.where(groupmsgid: gmsg.id).destroy_all
         TGroupMentionMsg.where(groupmsgid: gmsg.id).destroy_all
         TGroupMessage.find_by(id: gmsg.id).delete
       end
@@ -92,6 +96,7 @@ class MChannelsController < ApplicationController
       render json: @m_channel.errors, status: :unprocessable_entity
     else
       @m_channel = MChannel.find_by(id: params[:id])
+      render json: {m_channel: @m_channel}, status: :ok
     end
   end
 

@@ -28,9 +28,9 @@ class TDirectReactThreadController < ApplicationController
         @t_direct_react_thread.save
         @react_user_info = MUser.find_by(id: params[:user_id]).name
         ActionCable.server.broadcast("direct_thread_message_channel", {
-            react_message: @t_direct_react_thread,
-            reacted_user_info: @react_user_info
-          })
+          react_message: @t_direct_react_thread,
+          reacted_user_info: @react_user_info
+        })
         render json: { success: 'react successful'}, status: :ok
       end
     end

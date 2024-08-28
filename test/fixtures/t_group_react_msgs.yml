@@ -1,0 +1,11 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  groupmsgid: 1
+  userid: 1
+  emoji: MyString
+
+two:
+  groupmsgid: 1
+  userid: 1
+  emoji: MyString

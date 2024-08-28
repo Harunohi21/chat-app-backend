@@ -34,9 +34,6 @@ class DirectMessageController < ApplicationController
       end
     end
 
-    Rails.logger.info('direct message')
-    Rails.logger.info(params[:message])
-
     @t_direct_message = TDirectMessage.new(
       directmsg: params[:message],
       send_user_id: params[:user_id],
