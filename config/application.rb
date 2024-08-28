@@ -35,6 +35,7 @@ module FlutterBackend
     config.action_cable.mount_path = '/cable'
     
     # domain追加
-    config.hosts << ENV.fetch('RENDER_API_HOST', nil)
+    # config.hosts << ENV.fetch('RENDER_API_HOST', nil)
+     config.hosts << "chat-app-backend-hao1.onrender.com"
   end
 end

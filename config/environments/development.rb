@@ -44,7 +44,7 @@ Rails.application.configure do
   host = ENV.fetch('RENDER_API_HOST', nil), 
 
 
-  config.action_mailer.default_url_options = { host: 'mysite-6tke.onrender.com', protocol: 'https' }
+  config.action_mailer.default_url_options = { host: 'chat-app-backend-hao1.onrender.com', protocol: 'https' }
 
   config.action_mailer.perform_caching = false
 
