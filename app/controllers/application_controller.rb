@@ -131,11 +131,14 @@ class ApplicationController < ActionController::API
       @group_draft_status_counts.push(group_draft_count.size)
     end
     @all_unread_count = @m_channels.sum(&:message_count) + @direct_msgcounts.sum
+    @m_channel_unread_count = @m_channels.sum(&:message_count);
 
     @m_channelsids = @m_channels.pluck(:id)
 
     ActionCable.server.broadcast("home_channel", {
-        directunreadcount: @direct_msgcounts
+        directunreadcount: @direct_msgcounts,
+        groupunreadcount: @m_channel_unread_count,
+        allunreadcount: @all_unread_count
       })
 
     @retrievehome = {
