@@ -55,17 +55,17 @@ class DirectMessageController < ApplicationController
         @sender_profile_image = MUsersProfileImage.find_by(m_user_id: params[:user_id]).image_url
       end
 
-    #   @direct_msgcounts = []
-    # @direct_draft_status_counts = []
-    # @m_users.each do |muser|
-    #   direct_count = TDirectMessage.where(send_user_id: muser.id, receive_user_id: @current_user, draft_message_status: false, read_status: false)
-    #   thread_count = TDirectThread.joins("INNER JOIN t_direct_messages ON t_direct_messages.id = t_direct_threads.t_direct_message_id")
-    #                               .where("t_direct_threads.read_status = false AND t_direct_threads.draft_message_status = false AND t_direct_threads.m_user_id = ? AND
-    #                                       ((t_direct_messages.send_user_id = ? AND t_direct_messages.receive_user_id = ?) OR
-    #                                        (t_direct_messages.send_user_id = ? AND t_direct_messages.receive_user_id = ?))",
-    #                                      muser.id, muser.id, @current_user, @current_user, muser.id)
-    #   @direct_msgcounts.push(direct_count.size + thread_count.size)
-    # end
+      @direct_msgcounts = []
+    @direct_draft_status_counts = []
+    @m_users.each do |muser|
+      direct_count = TDirectMessage.where(send_user_id: muser.id, receive_user_id: @current_user, draft_message_status: false, read_status: false)
+      thread_count = TDirectThread.joins("INNER JOIN t_direct_messages ON t_direct_messages.id = t_direct_threads.t_direct_message_id")
+                                  .where("t_direct_threads.read_status = false AND t_direct_threads.draft_message_status = false AND t_direct_threads.m_user_id = ? AND
+                                          ((t_direct_messages.send_user_id = ? AND t_direct_messages.receive_user_id = ?) OR
+                                           (t_direct_messages.send_user_id = ? AND t_direct_messages.receive_user_id = ?))",
+                                         muser.id, muser.id, @current_user, @current_user, muser.id)
+      @direct_msgcounts.push(direct_count.size + thread_count.size)
+    end
 
       MUser.where(id: params[:s_user_id]).update_all(remember_digest: "1")
       ActionCable.server.broadcast("direct_message_channel", {
@@ -73,7 +73,7 @@ class DirectMessageController < ApplicationController
         files: file_records,
         sender_name: @sender_name,
         profile_image: @sender_profile_image,
-        # directunreadcount: @direct_msgcounts
+        directunreadcount: @direct_msgcounts
       })
 
       render json: {
