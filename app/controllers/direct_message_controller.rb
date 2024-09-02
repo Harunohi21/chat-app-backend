@@ -73,7 +73,7 @@ class DirectMessageController < ApplicationController
         files: file_records,
         sender_name: @sender_name,
         profile_image: @sender_profile_image,
-        directunreadcount: @direct_msgcounts
+        # directunreadcount: @direct_msgcounts
       })
 
       render json: {
