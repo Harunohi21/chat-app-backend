@@ -134,6 +134,10 @@ class ApplicationController < ActionController::API
 
     @m_channelsids = @m_channels.pluck(:id)
 
+    ActionCable.server.broadcast("home_channel", {
+        directunreadcount: @direct_msgcounts
+      })
+
     @retrievehome = {
       m_users: @m_users,
       m_channels: @m_channels,
