@@ -63,6 +63,29 @@ class DirectMessageController < ApplicationController
         profile_image: @sender_profile_image
       })
 
+      # ////// adding for direct count //////
+      @m_users = MUser.select("m_users.id, m_users.name, m_users.email, m_users.password_digest, m_users.profile_image, m_users.remember_digest, m_users.active_status, m_users.admin, m_users.member_status, m_users.created_at, m_users.updated_at, m_users_profile_images.image_url")
+      .joins("LEFT JOIN m_users_profile_images ON m_users_profile_images.m_user_id = m_users.id
+                          INNER JOIN t_user_workspaces ON t_user_workspaces.userid = m_users.id
+                          INNER JOIN m_workspaces ON m_workspaces.id = t_user_workspaces.workspaceid
+                          ")
+      .where("(m_users.member_status = true and m_workspaces.id = ?)", @current_workspace)
+      @direct_msgcounts = []
+      @m_users.each do |muser|
+        direct_count = TDirectMessage.where(send_user_id: params[:user_id], receive_user_id: params[:s_user_id], draft_message_status: false, read_status: false)
+        thread_count = TDirectThread.joins("INNER JOIN t_direct_messages ON t_direct_messages.id = t_direct_threads.t_direct_message_id")
+                                    .where("t_direct_threads.read_status = false AND t_direct_threads.draft_message_status = false AND t_direct_threads.m_user_id = ? AND
+                                            ((t_direct_messages.send_user_id = ? AND t_direct_messages.receive_user_id = ?) OR
+                                             (t_direct_messages.send_user_id = ? AND t_direct_messages.receive_user_id = ?))",
+                                             params[:user_id], params[:user_id], params[:s_user_id], params[:s_user_id], muser.id)
+        @direct_msgcounts.push(direct_count.size + thread_count.size)
+      end
+      ActionCable.server.broadcast("home_channel", {
+        message: @t_direct_message,
+        count: @direct_msgcounts
+      })
+      # ///// adding for direct count ////////
+
       render json: {
         t_direct_message: @t_direct_message,
         t_file_upload: file_records,
@@ -139,6 +162,29 @@ class DirectMessageController < ApplicationController
             profile_image: @sender_profile_image
           })
 
+          # adding for thread count
+          @m_users = MUser.select("m_users.id, m_users.name, m_users.email, m_users.password_digest, m_users.profile_image, m_users.remember_digest, m_users.active_status, m_users.admin, m_users.member_status, m_users.created_at, m_users.updated_at, m_users_profile_images.image_url")
+          .joins("LEFT JOIN m_users_profile_images ON m_users_profile_images.m_user_id = m_users.id
+                              INNER JOIN t_user_workspaces ON t_user_workspaces.userid = m_users.id
+                              INNER JOIN m_workspaces ON m_workspaces.id = t_user_workspaces.workspaceid
+                              ")
+          .where("(m_users.member_status = true and m_workspaces.id = ?)", @current_workspace)
+          @direct_msgcounts = []
+          @m_users.each do |muser|
+            direct_count = TDirectMessage.where(send_user_id: params[:user_id], receive_user_id: params[:s_user_id], draft_message_status: false, read_status: false)
+            thread_count = TDirectThread.joins("INNER JOIN t_direct_messages ON t_direct_messages.id = t_direct_threads.t_direct_message_id")
+                                        .where("t_direct_threads.read_status = false AND t_direct_threads.draft_message_status = false AND t_direct_threads.m_user_id = ? AND
+                                                ((t_direct_messages.send_user_id = ? AND t_direct_messages.receive_user_id = ?) OR
+                                                (t_direct_messages.send_user_id = ? AND t_direct_messages.receive_user_id = ?))",
+                                                params[:user_id], params[:user_id], params[:s_user_id], params[:s_user_id], muser.id)
+            @direct_msgcounts.push(direct_count.size + thread_count.size)
+          end
+          ActionCable.server.broadcast("home_channel", {
+            message: @t_direct_thread,
+            count: @direct_msgcounts
+          })
+          # adding for thread count
+          
           render json: {
             t_direct_thread_message: @t_direct_thread,
             t_thread_file_upload: file_records

@@ -118,6 +118,20 @@ class GroupMessageController < ApplicationController
       sender_name: @m_user.name,
     })
 
+    # for group count
+    @m_channels = MChannel.select("m_channels.id, channel_name, channel_status, t_user_channels.message_count")
+                          .joins("INNER JOIN t_user_channels ON t_user_channels.channelid = m_channels.id")
+                          .where("(m_channels.m_workspace_id = ? and t_user_channels.userid = ?)", @current_workspace, @current_user)
+                          .order(id: :asc)
+    @m_channels.sum(&:message_count)
+    # for group count
+    # HomeChannel for group count
+    ActionCable.server.broadcast("home_channel", {
+        message: @t_group_message,
+        count: @m_channels
+      })
+    # HomeChannel for group count
+
     render json: { t_group_message: @t_group_message, mention: mention_name, t_group_msg_file: file_records }
   end
 
@@ -241,6 +255,20 @@ class GroupMessageController < ApplicationController
             channel_id: @m_channel,
             sender_name: @m_user.name,
           })
+
+          # for group count
+          @m_channels = MChannel.select("m_channels.id, channel_name, channel_status, t_user_channels.message_count")
+                                .joins("INNER JOIN t_user_channels ON t_user_channels.channelid = m_channels.id")
+                                .where("(m_channels.m_workspace_id = ? and t_user_channels.userid = ?)", @current_workspace, @current_user)
+                                .order(id: :asc)
+          @m_channels.sum(&:message_count)
+          # for group count
+          # HomeChannel for count
+          ActionCable.server.broadcast("home_channel", {
+          message: @t_group_thread,
+          count: @m_channels
+          })
+          # HomeChannel for count
 
           render json: {
             t_group_thread: @t_group_thread,
