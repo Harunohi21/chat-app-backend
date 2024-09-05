@@ -29,6 +29,10 @@ class MChannelsController < ApplicationController
       @t_user_channel.created_admin = 1
       @t_user_channel.userid = m_channel_params[:user_id]
       @t_user_channel.channelid = @m_channel.id
+
+      ActionCable.server.broadcast("home_channel", {
+        newchannel: @m_channel
+      })
       
       if @t_user_channel.save
         render json: @m_channel, status: :created, location: @m_channel
@@ -50,6 +54,9 @@ class MChannelsController < ApplicationController
         m_channel.update(m_channel_params)
       end
     end
+    ActionCable.server.broadcast("home_channel", {
+        newchannel: @m_channel
+      })
   end
 
   def destroy
@@ -80,6 +87,9 @@ class MChannelsController < ApplicationController
       MChannel.find_by(id: params[:id]).delete
       @m_channels = MChannel.all
     end
+    ActionCable.server.broadcast("home_channel", {
+        newchannel: @m_channel
+      })
   end
 
   def refresh_group
